@@ -11,7 +11,7 @@ const daysUntil = (ts) => {
   return Math.ceil((date - new Date()) / 86400000);
 };
 
-export default function HomeScreen({ currentUser, items, locations, categories, usersMap, onSelectItem, onAddItem }) {
+export default function HomeScreen({ currentUser, items, locations, categories, usersMap, isAdmin, pendingCount, onSelectItem, onAddItem, onAdmin }) {
   const [filter,          setFilter]          = useState("all");
   const [showAddLocation, setShowAddLocation] = useState(false);
   const [newLocName,      setNewLocName]      = useState("");
@@ -32,7 +32,6 @@ export default function HomeScreen({ currentUser, items, locations, categories, 
       if (filter === "expiring") {
         return (daysUntil(a.expiryDate) ?? 9999) - (daysUntil(b.expiryDate) ?? 9999);
       }
-      // Sort by addedAt descending
       const aTime = a.addedAt?.toDate ? a.addedAt.toDate() : new Date(a.addedAt || 0);
       const bTime = b.addedAt?.toDate ? b.addedAt.toDate() : new Date(b.addedAt || 0);
       return bTime - aTime;
@@ -59,6 +58,31 @@ export default function HomeScreen({ currentUser, items, locations, categories, 
           <div style={styles.headerSub}>Hey, {currentUser.displayName}</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
+          {isAdmin && (
+            <button
+              style={{ ...styles.iconBtn, position: "relative" }}
+              onClick={onAdmin}
+              title="Admin portal"
+            >
+              🛡️
+              {pendingCount > 0 && (
+                <span style={{
+                  position:     "absolute",
+                  top:          -4,
+                  right:        -4,
+                  background:   "#ff3b30",
+                  color:        "#fff",
+                  borderRadius: 10,
+                  fontSize:     9,
+                  fontWeight:   800,
+                  padding:      "1px 5px",
+                  lineHeight:   "14px",
+                }}>
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          )}
           <button style={styles.iconBtn} onClick={onAddItem}>＋</button>
           <button style={{ ...styles.iconBtn, fontSize: 15 }} onClick={logOut} title="Sign out">⎋</button>
         </div>
