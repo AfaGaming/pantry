@@ -4,7 +4,7 @@ import {
   signInWithEmail,
   registerWithEmail,
 } from "../services/authService";
-import { styles } from "./styles";
+import { styles } from "../components/styles";
 
 export default function LoginScreen() {
   const [mode,        setMode]     = useState("login"); // login | register

@@ -1,11 +1,11 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { storage } from "../config/firebase";
+// ─────────────────────────────────────────────────────────────────────────────
+// CLOUDINARY IMAGE UPLOAD
+// Fill in your Cloud name and upload preset below.
+// API Secret is NOT needed here — unsigned uploads only.
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ─────────────────────────────────────────────────────────────────────────────
-// IMAGE UPLOAD
-// Compresses image client-side before uploading to Firebase Storage.
-// Returns the public download URL.
-// ─────────────────────────────────────────────────────────────────────────────
+const CLOUD_NAME   = "dno6whqqv";
+const UPLOAD_PRESET = "family_inventory_management_uploads"; // must match what you created in Cloudinary
 
 const compressImage = (file, maxWidthPx = 800, quality = 0.75) => {
   return new Promise((resolve, reject) => {
@@ -31,19 +31,27 @@ const compressImage = (file, maxWidthPx = 800, quality = 0.75) => {
   });
 };
 
-export const uploadItemImage = async (file, itemId) => {
+export const uploadItemImage = async (file) => {
   const compressed = await compressImage(file);
-  const storageRef  = ref(storage, `items/${itemId}_${Date.now()}.jpg`);
-  const snapshot    = await uploadBytes(storageRef, compressed);
-  const downloadUrl = await getDownloadURL(snapshot.ref);
-  return downloadUrl;
+  const formData   = new FormData();
+  formData.append("file",         compressed);
+  formData.append("upload_preset", UPLOAD_PRESET);
+
+  const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: "POST",
+    body:   formData,
+  });
+
+  if (!res.ok) throw new Error("Cloudinary upload failed");
+  const data = await res.json();
+  return data.secure_url; // this is the permanent URL saved to Firestore
 };
 
 export const deleteItemImage = async (imageUrl) => {
-  try {
-    const imageRef = ref(storage, imageUrl);
-    await deleteObject(imageRef);
-  } catch {
-    // Silently ignore — image may have already been deleted
-  }
+  // Deletion from the client side requires your API secret which
+  // should never be exposed in frontend code.
+  // For now images are orphaned on delete — clean them up
+  // manually in the Cloudinary dashboard, or implement a
+  // Firebase Cloud Function to handle deletion server-side later.
+  console.warn("Image deletion skipped — handle via Cloud Function in production.");
 };

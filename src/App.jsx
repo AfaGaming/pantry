@@ -49,7 +49,7 @@ export default function App() {
 
   if (authLoading)              return <Spinner />;
   if (!user)                    return <LoginScreen />;
-  if (authLoading || loadingData) return <Spinner />;
+  if (loadingData) return <Spinner />;
 
   if (view === "add") return (
     <AddItemScreen

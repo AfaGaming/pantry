@@ -6,25 +6,36 @@ import {
 } from "../services/dbService";
 
 export const useFirestore = () => {
-  const [items,      setItems]      = useState([]);
-  const [locations,  setLocations]  = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [items,       setItems]       = useState([]);
+  const [locations,   setLocations]   = useState([]);
+  const [categories,  setCategories]  = useState([]);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
-    let itemsDone = false, locsDone = false, catsDone = false;
+    // Use a ref-style object so closure always sees latest values
+    const done = { items: false, locations: false, categories: false };
     const checkDone = () => {
-      if (itemsDone && locsDone && catsDone) setLoadingData(false);
+      if (done.items && done.locations && done.categories) {
+        setLoadingData(false);
+      }
     };
 
     const unsubItems = subscribeToItems((data) => {
-      setItems(data); itemsDone = true; checkDone();
+      setItems(data);
+      done.items = true;
+      checkDone();
     });
     const unsubLocs = subscribeToLocations((data) => {
-      setLocations(data); locsDone = true; checkDone();
+      setLocations(data);
+      done.locations = true;
+      checkDone();
     });
     const unsubCats = subscribeToCategories((data) => {
-      setCategories(data); catsDone = true; checkDone();
+      setCategories(data);
+      done.cats = true;
+      // fix: was checking done.categories but setting done.cats
+      done.categories = true;
+      checkDone();
     });
 
     return () => { unsubItems(); unsubLocs(); unsubCats(); };

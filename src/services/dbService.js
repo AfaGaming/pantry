@@ -97,9 +97,12 @@ export const subscribeToCategories = (callback) => {
 
 export const upsertCategory = async (name) => {
   // Check if already exists (case-insensitive)
+  
+  if (!name || !name.trim()) return; // guard against empty/undefined
+  
   const snap = await getDocs(collection(db, "categories"));
   const existing = snap.docs.find(
-    (d) => d.data().name.toLowerCase() === name.toLowerCase()
+    (d) => d.data().name?.toLowerCase() === name.toLowerCase()
   );
   if (existing) {
     await updateDoc(doc(db, "categories", existing.id), {

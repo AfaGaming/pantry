@@ -44,7 +44,7 @@ export default function AddItemScreen({ currentUser, locations, categories, onBa
       let   imageUrl = null;
 
       if (imgFile) {
-        imageUrl = await uploadItemImage(imgFile, tempId);
+        imageUrl = await uploadItemImage(imgFile);
       }
 
       const category = catInput.trim();
