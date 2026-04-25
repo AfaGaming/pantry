@@ -2,13 +2,12 @@ import {
   collection,
   doc,
   updateDoc,
-  getDocs,
   onSnapshot,
   query,
   orderBy,
 } from "firebase/firestore";
-import { db } from "../config/firebase";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { db, auth } from "../config/firebase";
 
 // ── Live listener for all users (admin only) ──────────────────────────────────
 export const subscribeToUsers = (callback) => {
@@ -19,40 +18,46 @@ export const subscribeToUsers = (callback) => {
   });
 };
 
-// ── Approve a user ────────────────────────────────────────────────────────────
+// ── Live pending count — updates instantly on any user doc change ─────────────
+export const subscribeToPendingCount = (callback) => {
+  const q = query(collection(db, "users"));
+  return onSnapshot(q, (snap) => {
+    const count = snap.docs.filter((d) => {
+      const data = d.data();
+      return data.approved === false && !data.disabled;
+    }).length;
+    callback(count);
+  });
+};
+
+// ── Approve ───────────────────────────────────────────────────────────────────
 export const approveUser = async (uid) => {
   return updateDoc(doc(db, "users", uid), { approved: true, disabled: false });
 };
 
-// ── Reject / remove pending user ──────────────────────────────────────────────
+// ── Reject — moves to disabled tab, off pending ───────────────────────────────
 export const rejectUser = async (uid) => {
-  return updateDoc(doc(db, "users", uid), { approved: false });
+  return updateDoc(doc(db, "users", uid), { disabled: true });
 };
 
-// ── Disable an active user ────────────────────────────────────────────────────
+// ── Disable ───────────────────────────────────────────────────────────────────
 export const disableUser = async (uid) => {
   return updateDoc(doc(db, "users", uid), { disabled: true });
 };
 
-// ── Re-enable a disabled user ─────────────────────────────────────────────────
+// ── Re-enable ────────────────────────────────────────────────────────────────
 export const enableUser = async (uid) => {
   return updateDoc(doc(db, "users", uid), { disabled: false });
 };
 
-// ── Send password reset email (Firebase Auth) ─────────────────────────────────
-// This uses Firebase Auth's built-in reset — no Cloud Function needed.
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../config/firebase";
-
-export const resetUserPassword = async (email) => {
-  return sendPasswordResetEmail(auth, email);
+// ── Set admin role ────────────────────────────────────────────────────────────
+export const setAdminRole = async (uid, makeAdmin) => {
+  return updateDoc(doc(db, "users", uid), {
+    role: makeAdmin ? "admin" : "user",
+  });
 };
 
-// ── Get pending count (one-time fetch) ───────────────────────────────────────
-export const getPendingCount = async () => {
-  const snap = await getDocs(collection(db, "users"));
-  return snap.docs.filter((d) => {
-    const data = d.data();
-    return data.approved === false && !data.disabled;
-  }).length;
+// ── Password reset ────────────────────────────────────────────────────────────
+export const resetUserPassword = async (email) => {
+  return sendPasswordResetEmail(auth, email);
 };

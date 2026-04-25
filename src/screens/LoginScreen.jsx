@@ -44,12 +44,20 @@ export default function LoginScreen() {
 
         {/* Google */}
         <button
-          style={loginStyles.googleBtn}
+          style={{
+            ...loginStyles.googleBtn,
+            opacity: loading ? 0.6 : 1,
+            cursor:  loading ? "not-allowed" : "pointer",
+          }}
           onClick={() => handle(signInWithGoogle)}
           disabled={loading}
         >
-          <GoogleIcon />
-          Continue with Google
+          {loading ? (
+            <span style={{ marginRight: 8, fontSize: 16 }}>⏳</span>
+          ) : (
+            <GoogleIcon />
+          )}
+          {loading ? "Signing in…" : "Continue with Google"}
         </button>
 
         <div style={loginStyles.divider}><span>or</span></div>

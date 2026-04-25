@@ -6,6 +6,8 @@ import {
   subscribeToComments,
   addComment,
   deleteComment,
+  pinItem,
+  unpinItem,
 } from "../services/dbService";
 import { deleteItemImage } from "../services/storageService";
 import { MetaRow } from "../components/SharedComponents";
@@ -24,9 +26,10 @@ const expiryColor = (days) => {
   return null;
 };
 
-export default function DetailScreen({ item, location, currentUser, usersMap, onBack, onEdit }) {
+export default function DetailScreen({ item, location, currentUser, usersMap, onBack, onEdit, isAdmin }) {
   const [confirming,   setConfirming]   = useState(false);
   const [loading,      setLoading]      = useState(false);
+  const [pinLoading,   setPinLoading]   = useState(false);
   const [comments,     setComments]     = useState([]);
   const [commentText,  setCommentText]  = useState("");
   const [sendingComment, setSending]    = useState(false);
@@ -98,12 +101,30 @@ export default function DetailScreen({ item, location, currentUser, usersMap, on
     catch (e) { console.error(e); }
   };
 
+  const handlePin = async () => {
+    setPinLoading(true);
+    try {
+      item.pinned ? await unpinItem(item.id) : await pinItem(item.id);
+    } catch (e) { console.error(e); }
+    finally { setPinLoading(false); }
+  };
+
   return (
     <div style={styles.screen}>
       {/* Header */}
       <div style={styles.detailHeader}>
         <button style={styles.backBtn} onClick={onBack}>← Back</button>
         <div style={{ display: "flex", gap: 12 }}>
+          {isAdmin && (
+            <button
+              style={{ ...styles.backBtn, color: item.pinned ? "#ff9500" : "#555" }}
+              onClick={handlePin}
+              disabled={pinLoading}
+              title={item.pinned ? "Unpin" : "Pin to top"}
+            >
+              {pinLoading ? "…" : item.pinned ? "📌 Pinned" : "📌 Pin"}
+            </button>
+          )}
           <button style={{ ...styles.backBtn, color: "#007aff" }} onClick={onEdit}>Edit</button>
           <button style={{ ...styles.backBtn, color: "#ff3b30" }} onClick={() => setConfirming(true)} disabled={loading}>Delete</button>
         </div>

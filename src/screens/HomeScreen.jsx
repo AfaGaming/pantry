@@ -118,8 +118,12 @@ export default function HomeScreen({
       });
     }
 
-    // 4. Sort
+    // 4. Sort — pinned always first, then by sortKey
     result.sort((a, b) => {
+      // Pinned items always float to top
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+
       switch (sortKey) {
         case "expiring": {
           const da = daysUntil(a.expiryDate) ?? 99999;

@@ -57,9 +57,16 @@ export const unclaimItem = async (itemId) => {
   });
 };
 
+export const pinItem = async (itemId) => {
+  return updateDoc(doc(db, "items", itemId), { pinned: true });
+};
+
+export const unpinItem = async (itemId) => {
+  return updateDoc(doc(db, "items", itemId), { pinned: false });
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // LOCATIONS
-// Collection: "locations"
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const subscribeToLocations = (callback) => {
@@ -82,10 +89,6 @@ export const deleteLocation = async (locationId) => {
   return deleteDoc(doc(db, "locations", locationId));
 };
 
-export const renameLocation = async (locationId, newName) => {
-  return updateDoc(doc(db, "locations", locationId), { name: newName });
-};
-
 // ─────────────────────────────────────────────────────────────────────────────
 // CATEGORIES
 // Collection: "categories"
@@ -100,12 +103,11 @@ export const subscribeToCategories = (callback) => {
 };
 
 export const upsertCategory = async (name) => {
-  if (!name || !name.trim()) return;
+  // Check if already exists (case-insensitive)
   const snap = await getDocs(collection(db, "categories"));
-  const existing = snap.docs.find((d) => {
-    const n = d.data().name;
-    return typeof n === "string" && n.toLowerCase() === name.toLowerCase();
-  });
+  const existing = snap.docs.find(
+    (d) => d.data().name.toLowerCase() === name.toLowerCase()
+  );
   if (existing) {
     await updateDoc(doc(db, "categories", existing.id), {
       usageCount: (existing.data().usageCount || 0) + 1,
@@ -114,7 +116,7 @@ export const upsertCategory = async (name) => {
     await addDoc(collection(db, "categories"), {
       name,
       usageCount: 1,
-      createdAt:  serverTimestamp(),
+      createdAt: serverTimestamp(),
     });
   }
 };
@@ -155,4 +157,8 @@ export const deleteComment = async (itemId, commentId) => {
 export const getUsers = async () => {
   const snap = await getDocs(collection(db, "users"));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
+export const renameLocation = async (locationId, newName) => {
+  return updateDoc(doc(db, "locations", locationId), { name: newName });
 };

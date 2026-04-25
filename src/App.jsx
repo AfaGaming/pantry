@@ -3,7 +3,7 @@ import { useAuth } from "./hooks/useAuth";
 import { useFirestore } from "./hooks/useFirestore";
 import { getUsers } from "./services/dbService";
 import { checkApproval, logOut } from "./services/authService";
-import { getPendingCount } from "./services/adminService";
+import { subscribeToPendingCount } from "./services/adminService";
 import LoginScreen from "./screens/LoginScreen";
 import HomeScreen from "./screens/HomeScreen";
 import DetailScreen from "./screens/DetailScreen";
@@ -32,9 +32,8 @@ export default function App() {
 
   useEffect(() => {
     if (!userDoc?.isAdmin) return;
-    getPendingCount().then(setPendingCount);
-    const interval = setInterval(() => getPendingCount().then(setPendingCount), 30_000);
-    return () => clearInterval(interval);
+    const unsub = subscribeToPendingCount(setPendingCount);
+    return unsub;
   }, [userDoc]);
 
   useEffect(() => {
@@ -126,6 +125,7 @@ export default function App() {
         location={locations.find((l) => l.id === liveItem.locationId)}
         currentUser={user}
         usersMap={usersMap}
+        isAdmin={userDoc?.isAdmin || false}
         onBack={() => { setView("home"); setSelected(null); }}
         onEdit={() => setView("edit")}
       />

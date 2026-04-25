@@ -31,6 +31,20 @@ export default function ItemCard({ item, location, currentUser, usersMap, onClic
           ? <img src={item.imageUrl} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px 10px 0 0" }} />
           : <div style={{ ...styles.imgPlaceholder, borderRadius: "10px 10px 0 0" }}><span style={{ fontSize: 32 }}>📦</span></div>}
 
+        {/* Pin indicator */}
+        {item.pinned && (
+          <div style={{
+            position:   "absolute",
+            top:        6,
+            left:       6,
+            fontSize:   14,
+            lineHeight: 1,
+            filter:     "drop-shadow(0 1px 2px rgba(0,0,0,0.5))",
+          }}>
+            📌
+          </div>
+        )}
+
         {color && (
           <div style={{ ...styles.expiryBadge, position: "absolute", top: 6, right: 6, background: color }}>
             {days <= 0 ? "Expired" : `${days}d`}
