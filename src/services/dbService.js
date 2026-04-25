@@ -82,6 +82,10 @@ export const deleteLocation = async (locationId) => {
   return deleteDoc(doc(db, "locations", locationId));
 };
 
+export const renameLocation = async (locationId, newName) => {
+  return updateDoc(doc(db, "locations", locationId), { name: newName });
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CATEGORIES
 // Collection: "categories"

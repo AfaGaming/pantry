@@ -180,6 +180,19 @@ export default function DetailScreen({ item, location, currentUser, usersMap, on
                     <span style={{ fontSize: 12, fontWeight: 700, color: "#ccc" }}>
                       {author?.displayName || "Someone"}
                     </span>
+                    {author?.role === "admin" && (
+                      <span style={{
+                        fontSize:     9,
+                        fontWeight:   800,
+                        background:   "#0d1f3c",
+                        color:        "#007aff",
+                        borderRadius: 5,
+                        padding:      "1px 5px",
+                        letterSpacing: 0.5,
+                      }}>
+                        ADMIN
+                      </span>
+                    )}
                     <span style={{ fontSize: 11, color: "#555", marginLeft: "auto" }}>
                       {timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
