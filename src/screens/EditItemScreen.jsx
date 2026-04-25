@@ -11,31 +11,72 @@ const tsToDateString = (ts) => {
   return d.toISOString().split("T")[0];
 };
 
+const removeImgBtn = {
+  position:       "absolute",
+  top:            8,
+  right:          8,
+  background:     "rgba(0,0,0,0.6)",
+  border:         "none",
+  color:          "#fff",
+  borderRadius:   "50%",
+  width:          28,
+  height:         28,
+  fontSize:       12,
+  cursor:         "pointer",
+  display:        "flex",
+  alignItems:     "center",
+  justifyContent: "center",
+  zIndex:         10,
+};
+
 export default function EditItemScreen({ item, locations, categories, onBack }) {
-  const [name,        setName]        = useState(item.name || "");
-  const [description, setDesc]        = useState(item.description || "");
-  const [locationId,  setLocationId]  = useState(item.locationId || locations[0]?.id || "");
-  const [catInput,    setCatInput]    = useState(item.category || "");
-  const [quantity,    setQuantity]    = useState(item.quantity || "");
-  const [expiryDate,  setExpiryDate]  = useState(tsToDateString(item.expiryDate));
-  const [imgFile,     setImgFile]     = useState(null);
-  const [imgPreview,  setImgPreview]  = useState(item.imageUrl || null);
+  const [name,        setName]       = useState(item.name || "");
+  const [description, setDesc]       = useState(item.description || "");
+  const [locationId,  setLocationId] = useState(item.locationId || locations[0]?.id || "");
+  const [catInput,    setCatInput]   = useState(item.category || "");
+  const [quantity,    setQuantity]   = useState(item.quantity || "");
+  const [expiryDate,  setExpiryDate] = useState(tsToDateString(item.expiryDate));
   const [showCatDrop, setShowCatDrop] = useState(false);
-  const [saving,      setSaving]      = useState(false);
-  const [error,       setError]       = useState("");
+  const [saving,      setSaving]     = useState(false);
+  const [error,       setError]      = useState("");
+
+  // Image state — single source of truth
+  // imgState: { file: File|null, preview: string|null, existingUrl: string|null }
+  // - file: new file picked this session
+  // - preview: what to show in the frame (always derived below)
+  // - existingUrl: the saved Cloudinary URL (null if removed)
+  const [imgFile,       setImgFile]       = useState(null);
+  const [imgPreview,    setImgPreview]    = useState(null); // local blob preview for new file
+  const [existingUrl,   setExistingUrl]   = useState(item.imageUrl || null);
   const fileRef = useRef();
+
+  // What to actually show in the frame
+  const displayImage = imgPreview || existingUrl || null;
 
   const filteredCats = categories
     .filter((c) => c.name.toLowerCase().includes(catInput.toLowerCase()))
     .slice(0, 8);
 
-  const handleImage = (e) => {
+  const handleImagePick = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setImgFile(file);
+    // Reset input so same file can be picked again
+    e.target.value = "";
     const reader = new FileReader();
-    reader.onload = (ev) => setImgPreview(ev.target.result);
+    reader.onload = (ev) => {
+      setImgFile(file);
+      setImgPreview(ev.target.result);
+    };
     reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = (e) => {
+    e.stopPropagation();
+    setImgFile(null);
+    setImgPreview(null);
+    setExistingUrl(null);
+    // Reset file input so same file can be re-selected
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleSave = async () => {
@@ -44,27 +85,25 @@ export default function EditItemScreen({ item, locations, categories, onBack }) 
     setSaving(true);
     setError("");
     try {
-      let imageUrl = item.imageUrl;
+      let finalImageUrl = existingUrl; // null if removed, original URL if untouched
 
-      // Only upload if user picked a new image
       if (imgFile) {
-        imageUrl = await uploadItemImage(imgFile, item.id);
+        finalImageUrl = await uploadItemImage(imgFile, item.id);
       }
 
-      const category = catInput.trim();
+      const category = (catInput || "").trim();
 
       await updateItem(item.id, {
         name:        name.trim(),
         description: description.trim(),
         locationId,
-        category,
+        category:    category || null,
         quantity:    quantity.trim(),
         expiryDate:  expiryDate ? Timestamp.fromDate(new Date(expiryDate)) : null,
-        imageUrl,
+        imageUrl:    finalImageUrl,
       });
 
       if (category) await upsertCategory(category);
-
       onBack();
     } catch (e) {
       console.error(e);
@@ -89,14 +128,26 @@ export default function EditItemScreen({ item, locations, categories, onBack }) 
 
       <div style={styles.addForm}>
         {/* Photo */}
-        <div style={styles.imgUploadBox} onClick={() => fileRef.current.click()}>
-          {imgPreview
-            ? <img src={imgPreview} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} />
-            : <div style={{ textAlign: "center", color: "#666" }}>
-                <div style={{ fontSize: 36 }}>📷</div>
-                <div style={{ fontSize: 13, marginTop: 4 }}>Tap to change photo</div>
-              </div>}
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleImage} />
+        <div style={{ position: "relative", marginBottom: 4 }}>
+          <div style={styles.imgUploadBox} onClick={() => fileRef.current.click()}>
+            {displayImage
+              ? <img src={displayImage} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} />
+              : <div style={{ textAlign: "center", color: "#666" }}>
+                  <div style={{ fontSize: 36 }}>📷</div>
+                  <div style={{ fontSize: 13, marginTop: 4 }}>Tap to add photo</div>
+                </div>}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={handleImagePick}
+            />
+          </div>
+          {displayImage && (
+            <button onClick={handleRemoveImage} style={removeImgBtn}>✕</button>
+          )}
         </div>
 
         <Label>Name *</Label>
@@ -126,11 +177,7 @@ export default function EditItemScreen({ item, locations, categories, onBack }) 
           {showCatDrop && filteredCats.length > 0 && (
             <div style={styles.dropdown}>
               {filteredCats.map((c) => (
-                <div
-                  key={c.id}
-                  style={styles.dropItem}
-                  onMouseDown={() => { setCatInput(c.name); setShowCatDrop(false); }}
-                >
+                <div key={c.id} style={styles.dropItem} onMouseDown={() => { setCatInput(c.name); setShowCatDrop(false); }}>
                   {c.name}
                 </div>
               ))}

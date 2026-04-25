@@ -1,36 +1,66 @@
 import { useState, useRef } from "react";
-import { addItem } from "../services/dbService";
-import { upsertCategory } from "../services/dbService";
+import { addItem, upsertCategory } from "../services/dbService";
 import { uploadItemImage } from "../services/storageService";
 import { Label } from "../components/SharedComponents";
 import { styles } from "../components/styles";
 import { Timestamp } from "firebase/firestore";
 
+const removeImgBtn = {
+  position:       "absolute",
+  top:            8,
+  right:          8,
+  background:     "rgba(0,0,0,0.6)",
+  border:         "none",
+  color:          "#fff",
+  borderRadius:   "50%",
+  width:          28,
+  height:         28,
+  fontSize:       12,
+  cursor:         "pointer",
+  display:        "flex",
+  alignItems:     "center",
+  justifyContent: "center",
+  zIndex:         10,
+};
+
 export default function AddItemScreen({ currentUser, locations, categories, onBack }) {
-  const [name,        setName]        = useState("");
-  const [description, setDesc]        = useState("");
-  const [locationId,  setLocationId]  = useState(locations[0]?.id || "");
-  const [catInput,    setCatInput]    = useState("");
-  const [quantity,    setQuantity]    = useState("");
-  const [expiryDate,  setExpiryDate]  = useState("");
-  const [imgFile,     setImgFile]     = useState(null);
-  const [imgPreview,  setImgPreview]  = useState(null);
+  const [name,        setName]       = useState("");
+  const [description, setDesc]       = useState("");
+  const [locationId,  setLocationId] = useState(locations[0]?.id || "");
+  const [catInput,    setCatInput]   = useState("");
+  const [quantity,    setQuantity]   = useState("");
+  const [expiryDate,  setExpiryDate] = useState("");
   const [showCatDrop, setShowCatDrop] = useState(false);
-  const [saving,      setSaving]      = useState(false);
-  const [error,       setError]       = useState("");
+  const [saving,      setSaving]     = useState(false);
+  const [error,       setError]      = useState("");
+
+  // Image state
+  const [imgFile,    setImgFile]    = useState(null);
+  const [imgPreview, setImgPreview] = useState(null);
   const fileRef = useRef();
 
   const filteredCats = categories
     .filter((c) => c.name.toLowerCase().includes(catInput.toLowerCase()))
     .slice(0, 8);
 
-  const handleImage = (e) => {
+  const handleImagePick = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setImgFile(file);
+    // Reset so same file can be re-picked after removal
+    e.target.value = "";
     const reader = new FileReader();
-    reader.onload = (ev) => setImgPreview(ev.target.result);
+    reader.onload = (ev) => {
+      setImgFile(file);
+      setImgPreview(ev.target.result);
+    };
     reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = (e) => {
+    e.stopPropagation();
+    setImgFile(null);
+    setImgPreview(null);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleSave = async () => {
@@ -39,21 +69,20 @@ export default function AddItemScreen({ currentUser, locations, categories, onBa
     setSaving(true);
     setError("");
     try {
-      // Generate a temporary ID for storage path
-      const tempId   = Date.now().toString();
-      let   imageUrl = null;
+      const tempId = Date.now().toString();
+      let imageUrl = null;
 
       if (imgFile) {
-        imageUrl = await uploadItemImage(imgFile);
+        imageUrl = await uploadItemImage(imgFile, tempId);
       }
 
-      const category = catInput.trim();
+      const category = (catInput || "").trim();
 
       await addItem({
         name:        name.trim(),
         description: description.trim(),
         locationId,
-        category,
+        category:    category || null,
         quantity:    quantity.trim(),
         expiryDate:  expiryDate ? Timestamp.fromDate(new Date(expiryDate)) : null,
         imageUrl,
@@ -61,7 +90,6 @@ export default function AddItemScreen({ currentUser, locations, categories, onBa
       });
 
       if (category) await upsertCategory(category);
-
       onBack();
     } catch (e) {
       console.error(e);
@@ -86,14 +114,26 @@ export default function AddItemScreen({ currentUser, locations, categories, onBa
 
       <div style={styles.addForm}>
         {/* Photo */}
-        <div style={styles.imgUploadBox} onClick={() => fileRef.current.click()}>
-          {imgPreview
-            ? <img src={imgPreview} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} />
-            : <div style={{ textAlign: "center", color: "#666" }}>
-                <div style={{ fontSize: 36 }}>📷</div>
-                <div style={{ fontSize: 13, marginTop: 4 }}>Tap to add photo</div>
-              </div>}
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleImage} />
+        <div style={{ position: "relative", marginBottom: 4 }}>
+          <div style={styles.imgUploadBox} onClick={() => fileRef.current.click()}>
+            {imgPreview
+              ? <img src={imgPreview} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} />
+              : <div style={{ textAlign: "center", color: "#666" }}>
+                  <div style={{ fontSize: 36 }}>📷</div>
+                  <div style={{ fontSize: 13, marginTop: 4 }}>Tap to add photo</div>
+                </div>}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={handleImagePick}
+            />
+          </div>
+          {imgPreview && (
+            <button onClick={handleRemoveImage} style={removeImgBtn}>✕</button>
+          )}
         </div>
 
         <Label>Name *</Label>
@@ -123,11 +163,7 @@ export default function AddItemScreen({ currentUser, locations, categories, onBa
           {showCatDrop && filteredCats.length > 0 && (
             <div style={styles.dropdown}>
               {filteredCats.map((c) => (
-                <div
-                  key={c.id}
-                  style={styles.dropItem}
-                  onMouseDown={() => { setCatInput(c.name); setShowCatDrop(false); }}
-                >
+                <div key={c.id} style={styles.dropItem} onMouseDown={() => { setCatInput(c.name); setShowCatDrop(false); }}>
                   {c.name}
                 </div>
               ))}

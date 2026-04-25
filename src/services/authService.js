@@ -6,7 +6,7 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "../config/firebase";
 
 const upsertUserDoc = async (firebaseUser) => {
@@ -17,10 +17,16 @@ const upsertUserDoc = async (firebaseUser) => {
       uid:         firebaseUser.uid,
       displayName: firebaseUser.displayName || "Unnamed",
       email:       firebaseUser.email,
+      photoURL:    firebaseUser.photoURL || null,
       approved:    false,
       disabled:    false,
       role:        "user",
       createdAt:   serverTimestamp(),
+    });
+  } else {
+    // Update photoURL on every login in case it changed
+    await updateDoc(ref, {
+      photoURL: firebaseUser.photoURL || null,
     });
   }
 };
