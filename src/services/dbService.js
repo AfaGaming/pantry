@@ -103,11 +103,12 @@ export const subscribeToCategories = (callback) => {
 };
 
 export const upsertCategory = async (name) => {
-  // Check if already exists (case-insensitive)
+  if (!name || !name.trim()) return;
   const snap = await getDocs(collection(db, "categories"));
-  const existing = snap.docs.find(
-    (d) => d.data().name.toLowerCase() === name.toLowerCase()
-  );
+  const existing = snap.docs.find((d) => {
+    const n = d.data().name;
+    return typeof n === "string" && n.toLowerCase() === name.toLowerCase();
+  });
   if (existing) {
     await updateDoc(doc(db, "categories", existing.id), {
       usageCount: (existing.data().usageCount || 0) + 1,

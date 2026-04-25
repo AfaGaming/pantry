@@ -45,6 +45,8 @@ export const signInWithEmail = async (email, password) => {
 export const registerWithEmail = async (email, password, displayName) => {
   const result = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(result.user, { displayName });
+  // Small delay to let auth token propagate before Firestore write
+  await new Promise(resolve => setTimeout(resolve, 500));
   await upsertUserDoc({ ...result.user, displayName });
   return result.user;
 };

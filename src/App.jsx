@@ -18,13 +18,15 @@ const CLAIM_TIMEOUT_MS = 30 * 60 * 1000;
 
 export default function App() {
   const { user, loading: authLoading }                = useAuth();
-  const { items, locations, categories, loadingData } = useFirestore();
   const [usersMap,     setUsersMap]     = useState({});
   const [userDoc,      setUserDoc]      = useState(null);
   const [view,         setView]         = useState("home");
   const [selected,     setSelected]     = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
 
+  const { items, locations, categories, loadingData } = useFirestore(
+    userDoc?.approved === true && userDoc?.disabled !== true
+  );
   useEffect(() => {
     if (!user) { setUserDoc(null); return; }
     checkApproval(user.uid).then(setUserDoc);

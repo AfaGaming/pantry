@@ -5,6 +5,7 @@ import {
   rejectUser,
   disableUser,
   enableUser,
+  setAdminRole,
   resetUserPassword,
 } from "../services/adminService";
 import { styles } from "../components/styles";
@@ -151,6 +152,18 @@ export default function AdminScreen({ currentUser, onBack }) {
                   color="#ff9500"
                   loading={loading[u.uid]}
                   onClick={() => handle(u.uid, () => disableUser(u.uid), `${u.displayName} disabled`)}
+                />
+                <ActionBtn
+                  label={u.role === "admin" ? "Remove Admin" : "Make Admin"}
+                  color="#007aff"
+                  loading={loading[u.uid]}
+                  onClick={() => handle(
+                    u.uid,
+                    () => setAdminRole(u.uid, u.role !== "admin"),
+                    u.role === "admin"
+                      ? `${u.displayName} is no longer admin`
+                      : `${u.displayName} is now admin`
+                  )}
                 />
                 <ActionBtn
                   label="Reset Password"
