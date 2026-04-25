@@ -8,6 +8,7 @@ import LoginScreen from "./screens/LoginScreen";
 import HomeScreen from "./screens/HomeScreen";
 import DetailScreen from "./screens/DetailScreen";
 import AddItemScreen from "./screens/AddItemScreen";
+import EditItemScreen from "./screens/EditItemScreen";
 import AdminScreen from "./screens/AdminScreen";
 import { Spinner } from "./components/SharedComponents";
 import { unclaimItem } from "./services/dbService";
@@ -24,13 +25,11 @@ export default function App() {
   const [selected,     setSelected]     = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // Fetch current user's Firestore doc (approved, disabled, role)
   useEffect(() => {
     if (!user) { setUserDoc(null); return; }
     checkApproval(user.uid).then(setUserDoc);
   }, [user]);
 
-  // Poll pending count for admin badge
   useEffect(() => {
     if (!userDoc?.isAdmin) return;
     getPendingCount().then(setPendingCount);
@@ -38,7 +37,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, [userDoc]);
 
-  // Fetch users map for display names
   useEffect(() => {
     if (!user || !userDoc?.approved) return;
     getUsers().then((users) => {
@@ -48,7 +46,6 @@ export default function App() {
     });
   }, [user, userDoc]);
 
-  // Auto-unclaim stale claims
   useEffect(() => {
     if (!items.length) return;
     const interval = setInterval(() => {
@@ -68,7 +65,6 @@ export default function App() {
   if (!user)            return <LoginScreen />;
   if (userDoc === null) return <Spinner />;
 
-  // Disabled account
   if (userDoc.disabled) {
     return (
       <div style={{ ...styles.screen, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, textAlign: "center" }}>
@@ -82,7 +78,6 @@ export default function App() {
     );
   }
 
-  // Pending approval
   if (!userDoc.approved) {
     return (
       <div style={{ ...styles.screen, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, textAlign: "center" }}>
@@ -99,10 +94,7 @@ export default function App() {
   if (loadingData) return <Spinner />;
 
   if (view === "admin") return (
-    <AdminScreen
-      currentUser={user}
-      onBack={() => setView("home")}
-    />
+    <AdminScreen currentUser={user} onBack={() => setView("home")} />
   );
 
   if (view === "add") return (
@@ -114,6 +106,18 @@ export default function App() {
     />
   );
 
+  if (view === "edit" && selected) {
+    const liveItem = items.find((i) => i.id === selected.id) || selected;
+    return (
+      <EditItemScreen
+        item={liveItem}
+        locations={locations}
+        categories={categories}
+        onBack={() => setView("detail")}
+      />
+    );
+  }
+
   if (view === "detail" && selected) {
     const liveItem = items.find((i) => i.id === selected.id) || selected;
     return (
@@ -123,6 +127,7 @@ export default function App() {
         currentUser={user}
         usersMap={usersMap}
         onBack={() => { setView("home"); setSelected(null); }}
+        onEdit={() => setView("edit")}
       />
     );
   }

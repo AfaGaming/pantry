@@ -1,4 +1,5 @@
 import { styles } from "./styles";
+import Avatar from "./Avatar";
 
 const daysUntil = (ts) => {
   if (!ts) return null;
@@ -14,10 +15,11 @@ const expiryColor = (days) => {
 };
 
 export default function ItemCard({ item, location, currentUser, usersMap, onClick }) {
-  const days           = daysUntil(item.expiryDate);
-  const color          = expiryColor(days);
-  const claimedByName  = usersMap?.[item.claimedBy]?.displayName;
-  const isMineClaim    = item.claimedBy === currentUser?.uid;
+  const days          = daysUntil(item.expiryDate);
+  const color         = expiryColor(days);
+  const claimedByName = usersMap?.[item.claimedBy]?.displayName;
+  const isMineClaim   = item.claimedBy === currentUser?.uid;
+  const addedByUser   = usersMap?.[item.addedBy];
 
   return (
     <div
@@ -34,6 +36,14 @@ export default function ItemCard({ item, location, currentUser, usersMap, onClic
             {days <= 0 ? "Expired" : `${days}d`}
           </div>
         )}
+
+        {/* Avatar — bottom left of image */}
+        {addedByUser && (
+          <div style={{ position: "absolute", bottom: 6, left: 6 }}>
+            <Avatar user={addedByUser} size={22} />
+          </div>
+        )}
+
         {item.claimedBy && (
           <div style={styles.claimedOverlay}>
             {isMineClaim ? "You" : (claimedByName || "Claimed")}

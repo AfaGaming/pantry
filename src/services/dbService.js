@@ -97,12 +97,9 @@ export const subscribeToCategories = (callback) => {
 
 export const upsertCategory = async (name) => {
   // Check if already exists (case-insensitive)
-  
-  if (!name || !name.trim()) return; // guard against empty/undefined
-  
   const snap = await getDocs(collection(db, "categories"));
   const existing = snap.docs.find(
-    (d) => d.data().name?.toLowerCase() === name.toLowerCase()
+    (d) => d.data().name.toLowerCase() === name.toLowerCase()
   );
   if (existing) {
     await updateDoc(doc(db, "categories", existing.id), {
@@ -115,6 +112,34 @@ export const upsertCategory = async (name) => {
       createdAt: serverTimestamp(),
     });
   }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMMENTS
+// Subcollection: "items/{itemId}/comments"
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const subscribeToComments = (itemId, callback) => {
+  const q = query(
+    collection(db, "items", itemId, "comments"),
+    orderBy("createdAt", "asc")
+  );
+  return onSnapshot(q, (snap) => {
+    const comments = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    callback(comments);
+  });
+};
+
+export const addComment = async (itemId, uid, text) => {
+  return addDoc(collection(db, "items", itemId, "comments"), {
+    uid,
+    text,
+    createdAt: serverTimestamp(),
+  });
+};
+
+export const deleteComment = async (itemId, commentId) => {
+  return deleteDoc(doc(db, "items", itemId, "comments", commentId));
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
