@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Dark background -->
+  <rect width="512" height="512" rx="112" fill="#0a0a0a"/>
+  <!-- Blue accent circle -->
+  <circle cx="256" cy="256" r="180" fill="#007aff" opacity="0.15"/>
+  <!-- House icon -->
+  <g transform="translate(256, 245)">
+    <!-- Roof -->
+    <polygon points="0,-130 -120,-30 120,-30" fill="#007aff"/>
+    <!-- House body -->
+    <rect x="-90" y="-30" width="180" height="130" rx="8" fill="#007aff" opacity="0.9"/>
+    <!-- Door -->
+    <rect x="-28" y="40" width="56" height="60" rx="6" fill="#0a0a0a" opacity="0.8"/>
+    <!-- Windows -->
+    <rect x="-70" y="0" width="40" height="35" rx="4" fill="#0a0a0a" opacity="0.6"/>
+    <rect x="30" y="0" width="40" height="35" rx="4" fill="#0a0a0a" opacity="0.6"/>
+  </g>
+</svg>
