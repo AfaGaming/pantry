@@ -9,7 +9,7 @@ import {
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "../config/firebase";
 
-const upsertUserDoc = async (firebaseUser) => {
+export const upsertUserDoc = async (firebaseUser) => {
   const ref  = doc(db, "users", firebaseUser.uid);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
@@ -35,6 +35,26 @@ export const signInWithGoogle = async () => {
   const result = await signInWithPopup(auth, googleProvider);
   await upsertUserDoc(result.user);
   return result.user;
+};
+
+export const handleGoogleRedirect = async () => {
+  try {
+    console.log("Checking redirect result...");
+    const result = await getRedirectResult(auth);
+    console.log("Redirect result:", result);
+    if (result) {
+      console.log("User:", result.user);
+      console.log("Credential:", result.credential);
+    } else {
+      console.log("No redirect result — either no redirect happened or it was already consumed");
+    }
+    return result;
+  } catch (e) {
+    console.error("Redirect error code:", e.code);
+    console.error("Redirect error message:", e.message);
+    console.error("Full error:", e);
+    return null;
+  }
 };
 
 export const signInWithEmail = async (email, password) => {
